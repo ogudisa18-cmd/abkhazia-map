@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дороги Абхазии — Безопасность</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', Arial, sans-serif; 
+            background: #0f172a;
+        }
+
+        .header {
+            position: absolute; top: 0; left: 0; right: 0;
+            background: linear-gradient(135deg, #1e2937, #334155);
+            color: white; padding: 14px 20px; z-index: 1100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .map-container {
+            height: 100vh; width: 100%;
+            padding: 68px 12px 12px 12px;
+            background: #0f172a;
+        }
+
+        #map { 
+            height: 100%; width: 100%; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+        }
+
+        .fab {
+            position: absolute;
+            top: 125px;
+            left: 20px;
+            width: 58px;
+            height: 58px;
+            background: linear-gradient(145deg, #1e88e5, #1565c0);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(21,101,192,0.5),
+                        inset 0 2px 4px rgba(255,255,255,0.3);
+            z-index: 1100;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .fab:hover { transform: scale(1.08); }
+
+        .fab-menu {
+            position: absolute;
+            top: 195px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+            z-index: 1090;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 195px;
+        }
+
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: left;
+        }
+        button:hover { transform: translateX(4px); }
+
+        .danger { background: #ffc107; color: #1a1a1a; }
+        .police { background: #1565c0; color: white; }
+        .dtp { background: #e53935; color: white; }
+        .clear { background: #6c757d; color: white; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.8); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+
+        .custom-icon {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            pointer-events: auto; cursor: pointer;
+        }
+
+        .danger-icon { background: #ffc107; animation: pulse 1.4s infinite; }
+        .police-icon { background: #1565c0; animation: pulse 2.3s infinite; color: white; }
+        .dtp-icon { background: #e53935; animation: pulse 1.6s infinite; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🛡️ Дороги Абхазии — Общая Безопасность</h1>
+            <p>Ставьте метки и помогайте другим водителям!</p>
+        </div>
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+
+    <button class="fab" id="fabBtn">📍</button>
+
+    <div class="fab-menu" id="fabMenu">
+        <button class="danger" id="btn-danger">⚠ Опасность</button>
+        <button class="police" id="btn-police">👮 ГАИ / ДПС</button>
+        <button class="dtp" id="btn-dtp">🚑 ДТП</button>
+        <button class="clear" id="btn-clear">🗑 Очистить всё</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map', { zoomControl: true }).setView([43.0, 41.0], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        const abkhaziaBounds = L.latLngBounds([42.45, 40.05], [43.55, 42.05]);
+
+        let markers = [];
+        let markersLayer = L.layerGroup().addTo(map);
+
+        function isInAbkhazia(lat, lng) {
+            return abkhaziaBounds.contains([lat, lng]);
+        }
+
+        function loadMarkers() {
+            const saved = localStorage.getItem('abkhaziaMarkers');
+            if (saved) {
+                markers = JSON.parse(saved);
+                markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc));
+            }
+        }
+
+        function saveMarkers() {
+            localStorage.setItem('abkhaziaMarkers', JSON.stringify(markers));
+        }
+
+        function createMarker(lat, lng, type, desc = "") {
+            let color, emoji, label;
+
+            if (type === 'danger') { color = '#ffc107'; emoji = '⚠'; label = 'ОПАСНОСТЬ НА ДОРОГЕ'; }
+            else if (type === 'police') { color = '#1565c0'; emoji = '🚨'; label = 'ГАИ / ДПС'; }
+            else if (type === 'dtp') { color = '#e53935'; emoji = '🚑'; label = 'ДТП'; }
+
+            const icon = L.divIcon({
+                html: `<div class="custom-icon ${type}-icon">${emoji}</div>`,
+                className: 'leaflet-marker-icon',
+                iconSize: [48, 48],
+                iconAnchor: [24, 24],
+                popupAnchor: [0, -30]
+            });
+
+            const marker = L.marker([lat, lng], { icon: icon, interactive: true }).addTo(markersLayer);
+
+            const popupHTML = `
+                <div style="min-width:260px;">
+                    <strong style="color:${color}; font-size:17px;">${emoji} ${label}</strong><br>
+                    <small style="color:#666;">${new Date().toLocaleString('ru-RU')}</small><br><br>
+                    ${desc ? `<i>${desc}</i><br><br>` : ''}
+                    <button onclick="removeThisMarker(${lat.toFixed(6)}, ${lng.toFixed(6)})" 
+                            style="width:100%; padding:11px; background:#dc3545; color:white; border:none; 
+                                   border-radius:10px; cursor:pointer; font-weight:500;">
+                        🗑 Удалить метку
+                    </button>
+                </div>
+            `;
+
+            marker.bindPopup(popupHTML);
+            return marker;
+        }
+
+        window.removeThisMarker = function(lat, lng) {
+            markers = markers.filter(m => Math.abs(m.lat - lat) > 0.0001 || Math.abs(m.lng - lng) > 0.0001);
+            refreshAllMarkers();
+            saveMarkers();
+        };
+
+        function refreshAllMarkers() {
+            markersLayer.clearLayers();
+            markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc));
+        }
+
+        function addMarkerMode(type) {
+            map.off('click');
+            map.once('click', (e) => {
+                if (!isInAbkhazia(e.latlng.lat, e.latlng.lng)) {
+                    alert("❌ Метки можно ставить только на территории Абхазии!");
+                    return;
+                }
+                const desc = prompt('Добавьте комментарий:', '') || '';
+                markers.push({
+                    lat: parseFloat(e.latlng.lat.toFixed(6)),
+                    lng: parseFloat(e.latlng.lng.toFixed(6)),
+                    type: type,
+                    desc: desc
+                });
+                refreshAllMarkers();
+                saveMarkers();
+            });
+        }
+
+        // Управление кнопкой
+        const fabBtn = document.getElementById('fabBtn');
+        const fabMenu = document.getElementById('fabMenu');
+
+        fabBtn.addEventListener('click', () => {
+            fabMenu.style.display = (fabMenu.style.display === 'flex') ? 'none' : 'flex';
+        });
+
+        document.getElementById('btn-danger').addEventListener('click', () => { addMarkerMode('danger'); fabMenu.style.display = 'none'; });
+        document.getElementById('btn-police').addEventListener('click', () => { addMarkerMode('police'); fabMenu.style.display = 'none'; });
+        document.getElementById('btn-dtp').addEventListener('click', () => { addMarkerMode('dtp'); fabMenu.style.display = 'none'; });
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (confirm('Очистить все метки?')) {
+                markers = [];
+                markersLayer.clearLayers();
+                localStorage.removeItem('abkhaziaMarkers');
+            }
+            fabMenu.style.display = 'none';
+        });
+
+        loadMarkers();
+    </script>
+</body>
+</html>
