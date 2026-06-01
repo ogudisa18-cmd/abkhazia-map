@@ -13,7 +13,7 @@
         .map-container { height: 100vh; padding: 72px 12px 12px; background: #0a0f1c; }
         #map { height: 100%; width: 100%; border-radius: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); }
 
-        .fab {
+        .fab { 
             position: absolute; top: 135px; left: 25px;
             width: 62px; height: 62px;
             background: linear-gradient(145deg, #3b82f6, #1e40af);
@@ -30,10 +30,7 @@
             z-index: 1090; display: none; flex-direction: column; gap: 8px; min-width: 205px;
         }
 
-        button {
-            padding: 13px 18px; border: none; border-radius: 12px;
-            cursor: pointer; font-size: 15.5px; font-weight: 600;
-        }
+        button { padding: 13px 18px; border: none; border-radius: 12px; cursor: pointer; font-size: 15.5px; font-weight: 600; }
         button:hover { transform: translateX(6px); }
 
         .danger { background: #ffc107; color: #1a1a1a; }
@@ -41,7 +38,28 @@
         .dtp { background: #ef4444; color: white; }
         .clear { background: #64748b; color: white; }
 
-        .popup-image { max-width: 100%; border-radius: 10px; margin: 10px 0; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.8); }
+            70% { box-shadow: 0 0 0 22px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+
+        .custom-icon {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            border: 4px solid white;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5);
+            pointer-events: auto; cursor: pointer;
+            background: transparent !important;   /* Убрали белый фон */
+        }
+
+        .danger-icon { background: #ffc107; animation: pulse 1.4s infinite; }
+        .police-icon { background: #1e40af; animation: pulse 2.2s infinite; color: white; }
+        .dtp-icon { background: #ef4444; animation: pulse 1.6s infinite; color: white; }
+
+        .popup-image { max-width: 100%; border-radius: 12px; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -85,7 +103,7 @@
             const saved = localStorage.getItem('abkhaziaMarkers');
             if (saved) {
                 markers = JSON.parse(saved);
-                markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc, m.photo));
+                markers.forEach((m, i) => createMarker(m.lat, m.lng, m.type, m.desc, m.photo, i));
             }
         }
 
@@ -93,33 +111,58 @@
             localStorage.setItem('abkhaziaMarkers', JSON.stringify(markers));
         }
 
-        function createMarker(lat, lng, type, desc = "", photoBase64 = "") {
+        function createMarker(lat, lng, type, desc = "", photo = "", index) {
             const colors = { danger: '#ffc107', police: '#1e40af', dtp: '#ef4444' };
             const emojis = { danger: '⚠', police: '👮', dtp: '🚑' };
 
             const icon = L.divIcon({
                 html: `<div class="custom-icon ${type}-icon">${emojis[type]}</div>`,
-                iconSize: [50, 50],
-                iconAnchor: [25, 25]
+                className: '',                    // Важно! Убрали дефолтный класс
+                iconSize: [52, 52],
+                iconAnchor: [26, 26]
             });
 
             const marker = L.marker([lat, lng], { icon }).addTo(markersLayer);
 
-            const photoHTML = photoBase64 ? `<img src="${photoBase64}" class="popup-image">` : '';
+            const photoHTML = photo ? `<img src="${photo}" class="popup-image">` : '<p style="color:#888; font-style:italic; text-align:center;">Фото отсутствует</p>';
+
+            const addPhotoBtn = `<button onclick="addPhotoToMarker(${index})" style="width:100%; padding:11px; background:#3b82f6; color:white; border:none; border-radius:10px; margin:8px 0;">📷 Добавить фото</button>`;
 
             marker.bindPopup(`
                 <div style="min-width:280px;">
-                    <strong style="color:${colors[type]}; font-size:18px;">${emojis[type]} ${type.toUpperCase()}</strong><br>
+                    <strong style="color:${colors[type]}; font-size:18px;">${emojis[type]} ${type.toUpperCase()}</strong><br><br>
                     ${photoHTML}
                     ${desc ? `<p>${desc}</p>` : ''}
                     <small>${new Date().toLocaleString('ru-RU')}</small><br><br>
+                    ${addPhotoBtn}
                     <button onclick="removeThisMarker(${lat.toFixed(6)}, ${lng.toFixed(6)})" 
                             style="width:100%; padding:10px; background:#dc3545; color:white; border:none; border-radius:10px;">
-                        🗑 Удалить
+                        🗑 Удалить метку
                     </button>
                 </div>
             `);
         }
+
+        window.addPhotoToMarker = function(index) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    markers[index].photo = ev.target.result;
+                    refreshAllMarkers();
+                    saveMarkers();
+                };
+                reader.readAsDataURL(file);
+            };
+
+            input.click();
+        };
 
         window.removeThisMarker = function(lat, lng) {
             markers = markers.filter(m => Math.abs(m.lat - lat) > 0.0001 || Math.abs(m.lng - lng) > 0.0001);
@@ -129,7 +172,7 @@
 
         function refreshAllMarkers() {
             markersLayer.clearLayers();
-            markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc, m.photo));
+            markers.forEach((m, i) => createMarker(m.lat, m.lng, m.type, m.desc, m.photo, i));
         }
 
         function addMarkerMode(type) {
@@ -139,36 +182,11 @@
                     alert("❌ Метки можно ставить только на территории Абхазии!");
                     return;
                 }
-
                 const desc = prompt('Комментарий к метке:', '') || '';
-
-                // Окно выбора фото
-                const photoInput = document.createElement('input');
-                photoInput.type = 'file';
-                photoInput.accept = 'image/*';
-
-                photoInput.onchange = function(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const photoBase64 = e.target.result;
-                            saveNewMarker(e.latlng.lat, e.latlng.lng, type, desc, photoBase64);
-                        };
-                        reader.readAsDataURL(file);
-                    } else {
-                        saveNewMarker(e.latlng.lat, e.latlng.lng, type, desc, '');
-                    }
-                };
-
-                photoInput.click();
+                markers.push({ lat: e.latlng.lat, lng: e.latlng.lng, type: type, desc: desc, photo: "" });
+                refreshAllMarkers();
+                saveMarkers();
             });
-        }
-
-        function saveNewMarker(lat, lng, type, desc, photoBase64) {
-            markers.push({ lat, lng, type, desc, photo: photoBase64 });
-            refreshAllMarkers();
-            saveMarkers();
         }
 
         // Кнопки
