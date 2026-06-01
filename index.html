@@ -6,114 +6,102 @@
     <title>Дороги Абхазии — Безопасность</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         body { 
             margin: 0; 
             font-family: 'Inter', Arial, sans-serif; 
-            background: #0f172a;
+            background: #0a0f1c;
+            overflow: hidden;
         }
 
         .header {
             position: absolute; top: 0; left: 0; right: 0;
-            background: linear-gradient(135deg, #1e2937, #334155);
-            color: white; padding: 14px 20px; z-index: 1100;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #1a2338, #2a3a5a);
+            color: white; padding: 15px 20px; z-index: 1100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .map-container {
-            height: 100vh; width: 100%;
-            padding: 68px 12px 12px 12px;
-            background: #0f172a;
-        }
+        .map-container { height: 100vh; padding: 72px 12px 12px; background: #0a0f1c; }
 
         #map { 
             height: 100%; width: 100%; 
-            border-radius: 16px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+            border-radius: 20px; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
         }
 
+        /* Красивая кнопка */
         .fab {
-            position: absolute;
-            top: 125px;
-            left: 20px;
-            width: 58px;
-            height: 58px;
-            background: linear-gradient(145deg, #1e88e5, #1565c0);
+            position: absolute; top: 135px; left: 25px;
+            width: 62px; height: 62px;
+            background: linear-gradient(145deg, #3b82f6, #1e40af);
             color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 6px 20px rgba(21,101,192,0.5),
-                        inset 0 2px 4px rgba(255,255,255,0.3);
-            z-index: 1100;
-            cursor: pointer;
+            border: none; border-radius: 50%;
+            font-size: 28px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5),
+                        inset 0 3px 6px rgba(255,255,255,0.4);
+            z-index: 1100; cursor: pointer;
             transition: all 0.3s ease;
         }
-        .fab:hover { transform: scale(1.08); }
+        .fab:hover { transform: scale(1.12); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.6); }
 
         .fab-menu {
-            position: absolute;
-            top: 195px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.97);
-            backdrop-filter: blur(16px);
-            border-radius: 16px;
-            padding: 10px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.3);
-            z-index: 1090;
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 195px;
+            position: absolute; top: 215px; left: 25px;
+            background: rgba(255,255,255,0.96); backdrop-filter: blur(20px);
+            border-radius: 18px; padding: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+            z-index: 1090; display: none; flex-direction: column; gap: 8px;
+            min-width: 205px;
         }
 
         button {
-            padding: 12px 16px;
+            padding: 13px 18px;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 500;
-            text-align: left;
+            font-size: 15.5px;
+            font-weight: 600;
+            transition: all 0.2s;
         }
-        button:hover { transform: translateX(4px); }
+        button:hover { transform: translateX(6px); }
 
         .danger { background: #ffc107; color: #1a1a1a; }
-        .police { background: #1565c0; color: white; }
-        .dtp { background: #e53935; color: white; }
-        .clear { background: #6c757d; color: white; }
+        .police { background: #1e40af; color: white; }
+        .dtp { background: #ef4444; color: white; }
+        .clear { background: #64748b; color: white; }
 
+        /* Пульсация меток */
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.8); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 193, 7, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 22px rgba(255, 193, 7, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
         }
 
         .custom-icon {
-            width: 48px; height: 48px;
+            width: 50px; height: 50px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px;
+            font-size: 27px;
             border: 4px solid white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5);
             pointer-events: auto; cursor: pointer;
         }
 
         .danger-icon { background: #ffc107; animation: pulse 1.4s infinite; }
-        .police-icon { background: #1565c0; animation: pulse 2.3s infinite; color: white; }
-        .dtp-icon { background: #e53935; animation: pulse 1.6s infinite; color: white; }
+        .police-icon { background: #1e40af; animation: pulse 2.2s infinite; color: white; }
+        .dtp-icon { background: #ef4444; animation: pulse 1.6s infinite; color: white; }
+
+        .popup-image {
+            max-width: 100%; border-radius: 10px; margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div>
-            <h1>🛡️ Дороги Абхазии — Общая Безопасность</h1>
-            <p>Ставьте метки и помогайте другим водителям!</p>
-        </div>
+        <h1>🛡️ Дороги Абхазии</h1>
+        <p style="font-size:15px; opacity:0.9;">Общая безопасность</p>
     </div>
 
     <div class="map-container">
@@ -151,7 +139,7 @@
             const saved = localStorage.getItem('abkhaziaMarkers');
             if (saved) {
                 markers = JSON.parse(saved);
-                markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc));
+                markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc, m.photo));
             }
         }
 
@@ -159,38 +147,32 @@
             localStorage.setItem('abkhaziaMarkers', JSON.stringify(markers));
         }
 
-        function createMarker(lat, lng, type, desc = "") {
-            let color, emoji, label;
-
-            if (type === 'danger') { color = '#ffc107'; emoji = '⚠'; label = 'ОПАСНОСТЬ НА ДОРОГЕ'; }
-            else if (type === 'police') { color = '#1565c0'; emoji = '🚨'; label = 'ГАИ / ДПС'; }
-            else if (type === 'dtp') { color = '#e53935'; emoji = '🚑'; label = 'ДТП'; }
+        function createMarker(lat, lng, type, desc = "", photo = "") {
+            const colors = { danger: '#ffc107', police: '#1e40af', dtp: '#ef4444' };
+            const emojis = { danger: '⚠', police: '👮', dtp: '🚑' };
 
             const icon = L.divIcon({
-                html: `<div class="custom-icon ${type}-icon">${emoji}</div>`,
-                className: 'leaflet-marker-icon',
-                iconSize: [48, 48],
-                iconAnchor: [24, 24],
-                popupAnchor: [0, -30]
+                html: `<div class="custom-icon ${type}-icon">${emojis[type]}</div>`,
+                iconSize: [50, 50],
+                iconAnchor: [25, 25]
             });
 
-            const marker = L.marker([lat, lng], { icon: icon, interactive: true }).addTo(markersLayer);
+            const marker = L.marker([lat, lng], { icon: icon }).addTo(markersLayer);
 
-            const popupHTML = `
-                <div style="min-width:260px;">
-                    <strong style="color:${color}; font-size:17px;">${emoji} ${label}</strong><br>
-                    <small style="color:#666;">${new Date().toLocaleString('ru-RU')}</small><br><br>
-                    ${desc ? `<i>${desc}</i><br><br>` : ''}
+            const photoHTML = photo ? `<img src="${photo}" class="popup-image" alt="Фото">` : '';
+
+            marker.bindPopup(`
+                <div style="min-width:270px;">
+                    <strong style="color:${colors[type]}; font-size:18px;">${emojis[type]} ${type.toUpperCase()}</strong><br>
+                    ${photoHTML}
+                    ${desc ? `<p style="margin:10px 0;">${desc}</p>` : ''}
+                    <small style="color:#888;">${new Date().toLocaleString('ru-RU')}</small><br><br>
                     <button onclick="removeThisMarker(${lat.toFixed(6)}, ${lng.toFixed(6)})" 
-                            style="width:100%; padding:11px; background:#dc3545; color:white; border:none; 
-                                   border-radius:10px; cursor:pointer; font-weight:500;">
+                            style="width:100%; padding:10px; background:#dc3545; color:white; border:none; border-radius:10px; cursor:pointer;">
                         🗑 Удалить метку
                     </button>
                 </div>
-            `;
-
-            marker.bindPopup(popupHTML);
-            return marker;
+            `);
         }
 
         window.removeThisMarker = function(lat, lng) {
@@ -201,7 +183,7 @@
 
         function refreshAllMarkers() {
             markersLayer.clearLayers();
-            markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc));
+            markers.forEach(m => createMarker(m.lat, m.lng, m.type, m.desc, m.photo));
         }
 
         function addMarkerMode(type) {
@@ -211,36 +193,38 @@
                     alert("❌ Метки можно ставить только на территории Абхазии!");
                     return;
                 }
-                const desc = prompt('Добавьте комментарий:', '') || '';
+
+                const desc = prompt('Комментарий к метке:', '') || '';
+                const photo = prompt('Вставьте прямую ссылку на фото (необязательно):', '') || '';
+
                 markers.push({
                     lat: parseFloat(e.latlng.lat.toFixed(6)),
                     lng: parseFloat(e.latlng.lng.toFixed(6)),
                     type: type,
-                    desc: desc
+                    desc: desc,
+                    photo: photo
                 });
+
                 refreshAllMarkers();
                 saveMarkers();
             });
         }
 
-        // Управление кнопкой
-        const fabBtn = document.getElementById('fabBtn');
-        const fabMenu = document.getElementById('fabMenu');
-
-        fabBtn.addEventListener('click', () => {
-            fabMenu.style.display = (fabMenu.style.display === 'flex') ? 'none' : 'flex';
+        // Кнопки
+        document.getElementById('fabBtn').addEventListener('click', () => {
+            const menu = document.getElementById('fabMenu');
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
         });
 
-        document.getElementById('btn-danger').addEventListener('click', () => { addMarkerMode('danger'); fabMenu.style.display = 'none'; });
-        document.getElementById('btn-police').addEventListener('click', () => { addMarkerMode('police'); fabMenu.style.display = 'none'; });
-        document.getElementById('btn-dtp').addEventListener('click', () => { addMarkerMode('dtp'); fabMenu.style.display = 'none'; });
+        document.getElementById('btn-danger').addEventListener('click', () => { addMarkerMode('danger'); });
+        document.getElementById('btn-police').addEventListener('click', () => { addMarkerMode('police'); });
+        document.getElementById('btn-dtp').addEventListener('click', () => { addMarkerMode('dtp'); });
         document.getElementById('btn-clear').addEventListener('click', () => {
             if (confirm('Очистить все метки?')) {
                 markers = [];
                 markersLayer.clearLayers();
                 localStorage.removeItem('abkhaziaMarkers');
             }
-            fabMenu.style.display = 'none';
         });
 
         loadMarkers();
